@@ -441,7 +441,9 @@ async function submitReg(){
     });
 
     console.log("response status:", res.status);
-
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
     const data = await res.json();
     console.log("response data:", data);
 
