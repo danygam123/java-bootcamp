@@ -20,7 +20,9 @@ nav{background:rgba(13,15,20,0.95);border-bottom:1px solid var(--border);padding
 .nav-links{display:flex;gap:1.25rem;margin-left:auto;}
 .nav-links a{color:var(--muted);font-size:13px;text-decoration:none;cursor:pointer;transition:color .2s;}
 .nav-links a:hover,.nav-links a.active{color:var(--text);}
-.nav-btns{display:flex;gap:8px;margin-left:8px;}
+.nav-btns{
+  margin-left:8px;
+}
 .nbtn{border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:500;transition:background .2s;}
 .nbtn-java{background:var(--java);color:#fff;} .nbtn-java:hover{background:var(--java2);}
 .nbtn-outline{background:transparent;color:var(--text);border:1px solid var(--border2);} .nbtn-outline:hover{border-color:var(--java);color:var(--java);}
@@ -162,7 +164,6 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;
     <a onclick="showPage('home');scroll2('register')">Register</a>
   </div>
   <div class="nav-btns">
-    <button class="nbtn nbtn-outline" id="loginBtn" onclick="showPage('home');scroll2('register')">Sign in</button>
     <button class="nbtn nbtn-java" id="registerBtn" onclick="showPage('home');scroll2('register')">Register free</button>
   </div>
 </nav>
@@ -252,6 +253,16 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;
         </div>
 
         <button class="reg-submit-btn" onclick="submitReg()">Register now →</button>
+        <div id="regError" style="
+          display:none;
+          margin-top:12px;
+          background:rgba(255,80,80,.08);
+          border:1px solid rgba(255,80,80,.2);
+          color:#ff8d8d;
+          padding:10px 12px;
+          border-radius:8px;
+          font-size:13px;
+          "></div>
       </div>
 
       <!-- Success state -->
@@ -420,14 +431,21 @@ function pickMode(m){
 }
 
 async function submitReg(){
-  console.log("submitReg triggered");
 
-  const name = document.getElementById('rName').value;
-  const email = document.getElementById('rEmail').value;
+  const name = document.getElementById('rName').value.trim();
+  const email = document.getElementById('rEmail').value.trim();
 
-  console.log("data:", { name, email, mode: regModeChosen });
+  const errBox = document.getElementById("regError");
+  errBox.style.display = "none";
+
+  if(!name || !email){
+    errBox.textContent = "Please enter your name and email.";
+    errBox.style.display = "block";
+    return;
+  }
 
   try {
+
     const res = await fetch("https://java-bootcamp.onrender.com/register", {
       method: "POST",
       headers: {
@@ -440,16 +458,64 @@ async function submitReg(){
       })
     });
 
-    console.log("response status:", res.status);
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
     const data = await res.json();
-    console.log("response data:", data);
+
+    // duplicate email
+    if(!res.ok){
+
+      if(data.error && data.error.toLowerCase().includes("duplicate")){
+        errBox.textContent =
+          "An account with this email already exists.";
+      }
+      else{
+        errBox.textContent =
+          data.error || "Something went wrong.";
+      }
+
+      errBox.style.display = "block";
+      return;
+    }
+
+    // save locally
+    regName = name;
+    regEmail = email;
+    regMode = regModeChosen;
+
+    // success UI
+    document.getElementById('welcomeName').textContent =
+      name.split(' ')[0];
+
+    document.getElementById('welcomeEmail').textContent =
+      email;
+
+    document.getElementById('meetInfo').innerHTML =
+      regModeChosen === 'live'
+      ? `
+        <strong>LIVE COHORT ACCESS</strong>
+        You'll receive:
+        <br>• Google Meet links
+        <br>• Session reminders
+        <br>• Discord community invite
+      `
+      : `
+        <strong>SELF-PACED ACCESS</strong>
+        You'll receive:
+        <br>• All recordings
+        <br>• Exercises & slides
+        <br>• Discord community invite
+      `;
+
+    document.getElementById('inlineRegForm').style.display = 'none';
+    document.getElementById('inlineRegSuccess').style.display = 'block';
 
   } catch (err) {
-    console.error("FETCH ERROR:", err);
-    alert("Check if your are already registered or please try again.");
+
+    errBox.textContent =
+      "Server connection failed. Please try again.";
+
+    errBox.style.display = "block";
+
+    console.error(err);
   }
 }
 
