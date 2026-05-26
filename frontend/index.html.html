@@ -428,7 +428,7 @@ async function submitReg(){
   console.log("data:", { name, email, mode: regModeChosen });
 
   try {
-    const res = await fetch("https://java-bootcamp.onrender.com/register", {
+    const res = await fetch("https://java-bootcamp.onrender.com/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
