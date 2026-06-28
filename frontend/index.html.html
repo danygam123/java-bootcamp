@@ -181,6 +181,24 @@ footer{
 }
 
 footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;font-size:12px;color:var(--muted);}
+
+.loading-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-top: 3px solid white;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <script defer src="/_vercel/insights/script.js"></script>
@@ -283,7 +301,9 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;
           </div>
         </div>
  
-        <button class="reg-submit-btn" onclick="submitReg()">Register now →</button>
+        <button class="reg-submit-btn" id="submitBtn" onclick="submitReg()">
+          Register now →
+        </button>
         <div id="regError" style="display:none;margin-top:12px;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.2);color:#ff8d8d;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
       </div>
  
@@ -523,32 +543,121 @@ function pickMode(m){
 }
  
 async function submitReg(){
+
   const name=document.getElementById('rName').value.trim();
   const email=document.getElementById('rEmail').value.trim();
   const errBox=document.getElementById('regError');
+  const btn=document.getElementById('submitBtn');
+
   errBox.style.display='none';
-  if(!name||!email){errBox.textContent='Please enter your name and email.';errBox.style.display='block';return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errBox.textContent='Please enter a valid email address.';errBox.style.display='block';return;}
+
+  if(!name||!email){
+    errBox.textContent='Please enter your name and email.';
+    errBox.style.display='block';
+    return;
+  }
+
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errBox.textContent='Please enter a valid email address.';
+    errBox.style.display='block';
+    return;
+  }
+
+
+  // START LOADING
+  btn.disabled = true;
+  btn.innerHTML = `
+    <span class="loading-spinner"></span>
+    Registering...
+  `;
+
+
   try{
-    const res=await fetch('https://java-bootcamp.onrender.com/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,mode:regModeChosen})});
+
+    const res=await fetch(
+      'https://java-bootcamp.onrender.com/register',
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({
+          name,
+          email,
+          mode:regModeChosen
+        })
+      }
+    );
+
+
     const data=await res.json();
+
+
     if(!res.ok){
-      errBox.textContent=data.error&&data.error.toLowerCase().includes('duplicate')?'An account with this email already exists.':(data.error||'Something went wrong.');
-      errBox.style.display='block';return;
+
+      errBox.textContent =
+      data.error &&
+      data.error.toLowerCase().includes('duplicate')
+      ?
+      'An account with this email already exists.'
+      :
+      (data.error || 'Something went wrong.');
+
+      errBox.style.display='block';
+
+      btn.disabled=false;
+      btn.innerHTML="Register now →";
+
+      return;
     }
-    regName=name;regEmail=email;regMode=regModeChosen;
-    document.getElementById('welcomeName').textContent=name.split(' ')[0];
-    document.getElementById('welcomeEmail').textContent=email;
-    document.getElementById('meetInfo').innerHTML=regModeChosen==='live'
-      ?`<strong>LIVE COHORT ACCESS</strong>You'll receive:<br>• Google Meet links<br>• Session reminders<br>• Discord community invite`
-      :`<strong>SELF-PACED ACCESS</strong>You'll receive:<br>• All recordings<br>• Exercises & slides<br>• Discord community invite`;
+
+
+    regName=name;
+    regEmail=email;
+    regMode=regModeChosen;
+
+
+    document.getElementById('welcomeName').textContent =
+      name.split(' ')[0];
+
+    document.getElementById('welcomeEmail').textContent =
+      email;
+
+
+    document.getElementById('meetInfo').innerHTML =
+    regModeChosen==='live'
+    ?
+    `<strong>LIVE COHORT ACCESS</strong>
+    You'll receive:<br>
+    • Google Meet links<br>
+    • Session reminders<br>
+    • Discord community invite`
+    :
+    `<strong>SELF-PACED ACCESS</strong>
+    You'll receive:<br>
+    • All recordings<br>
+    • Exercises & slides<br>
+    • Discord community invite`;
+
+
     document.getElementById('inlineRegForm').style.display='none';
     document.getElementById('inlineRegSuccess').style.display='block';
-  }catch(err){
+
+
+  }
+
+  catch(err){
+
     errBox.textContent='Server connection failed. Please try again.';
     errBox.style.display='block';
+
     console.error(err);
+
+    btn.disabled=false;
+    btn.innerHTML="Register now →";
+
   }
+
 }
  
 function showDash(){
